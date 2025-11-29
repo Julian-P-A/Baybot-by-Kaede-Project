@@ -1,161 +1,147 @@
 # 🚀 Discord Task Management Bot – MVP
 
-**Autor:** Julian Camilo Pinzón Ariza  
-**Año:** 2025  
-**Licencia:** Todos los derechos reservados (ver sección de licencia)
+**Author:** Julian Camilo Pinzón Ariza  
+**Year:** 2025  
+**License:** All rights reserved (see license section)
 
 ---
 
-## 1️⃣ Objetivo
+## 1️⃣ Objective
 
-Este bot de Discord permite a equipos gestionar tareas sin salir de Discord, integrando:
+This Discord bot allows teams to manage tasks without leaving Discord, integrating:
 
-- Canales tipo foro + threads  
-- Google Calendar para fechas de entrega  
-- Notificaciones automáticas  
-- Estados de tarea: `pendiente`, `revisión`, `cambios`, `completada`  
+- Forum-style channels + threads  
+- Google Calendar for due dates  
+- Automatic notifications  
+- Task states: `pending`, `review`, `changes`, `completed`  
 
-Funciona de manera eficiente, sin procesos constantes, reaccionando únicamente a:
+It works efficiently without constant processes, reacting only to:
 
-- Comandos humanos  
-- Eventos de Discord  
-- Webhooks de Google Calendar  
-
----
-
-## 2️⃣ Alcance del MVP
-
-Desde Discord, el bot permite:
-
-- Crear tareas y asignar responsables  
-- Definir fecha de entrega  
-- Crear automáticamente un thread para cada tarea  
-- Crear evento en Google Calendar  
-- Cambiar estados de tarea  
-- Notificar al jefe en:  
-  - Entrega marcada por un empleado  
-  - Fecha vencida sin cierre  
-- Consultar tareas del día  
-
-**Administración:**  
-
-- Dueño del servidor = Jefe automático  
-- El jefe puede ascender otros usuarios a Manager o Jefe  
-- Empleados se registran automáticamente al ejecutar cualquier comando  
+- Human commands  
+- Discord events  
+- Google Calendar webhooks  
 
 ---
 
-## 3️⃣ Flujo de Usuario (resumido)
+## 2️⃣ MVP Scope
 
-### 🧠 Crear tarea
-- El jefe ejecuta `/tarea crear`  
-- El bot:  
-  - Crea registro en la base de datos  
-  - Crea thread en el foro configurado  
-  - Publica mensaje inicial en el hilo  
-  - Crea evento en Google Calendar y guarda el ID  
-  - Asigna responsables  
-  - Marca estado `pendiente`  
+From Discord, the bot allows:
 
-### 🏁 Empleado entrega
-- En el thread ejecuta `/tarea completar`  
-- El bot:  
-  - Cambia estado → `revision`  
-  - Notifica al jefe por DM o canal privado  
-  - Añade registro en `task_history`  
+- Creating tasks and assigning responsible users  
+- Setting a due date  
+- Automatically creating a thread for each task  
+- Creating an event in Google Calendar  
+- Changing task states  
+- Notifying the boss when:  
+  - An employee marks a task as delivered  
+  - A due date passes without closure  
+- Checking today’s tasks  
 
-### 🧑‍💼 Jefe revisa
-- Si aprueba → `completada`  
-- Si devuelve → `cambios` y asigna nueva fecha  
+**Administration:**  
 
-### ⏰ Fecha vencida
-- Webhook de Google Calendar avisa  
-- El bot revisa estado y si sigue en `pendiente` o `cambios` → notifica al jefe  
+- Server owner = automatic Boss  
+- The Boss can promote other users to Manager or Boss  
+- Employees register automatically when executing any command  
 
 ---
 
-## 4️⃣ Roles y permisos
+## 3️⃣ User Flow (summary)
 
-| Rol       | Permisos                                               |
-|----------|--------------------------------------------------------|
-| Jefe     | Todos los comandos                                     |
-| Manager  | Revisar, aprobar, devolver, ver reportes              |
-| Empleado | Completar tarea, agregar notas, consultar tareas      |
+### 🧠 Create Task
+- The Boss executes `/task create`  
+- The bot:  
+  - Creates a record in the database  
+  - Creates a thread in the configured forum  
+  - Posts the initial message in the thread  
+  - Creates a Google Calendar event and stores the ID  
+  - Assigns responsible users  
+  - Sets state to `pending`  
 
-**Asignación inicial:**
+### 🏁 Employee delivers
+- In the thread, the employee executes `/task complete`  
+- The bot:  
+  - Changes state → `review`  
+  - Notifies the Boss via DM or private channel  
+  - Adds a record in `task_history`  
 
-- Owner → Jefe  
-- Todos los demás → Empleado  
+### 🧑‍💼 Boss reviews
+- If approved → `completed`  
+- If returned → `changes` and assigns a new date  
 
-**Comando para ascender:**
+### ⏰ Overdue
+- Google Calendar webhook alerts  
+- The bot checks the state and if still `pending` or `changes` → notifies the Boss  
+
+---
+
+## 4️⃣ Roles and Permissions
+
+| Role      | Permissions                                             |
+|----------|---------------------------------------------------------|
+| Boss     | All commands                                            |
+| Manager  | Review, approve, return, view reports                  |
+| Employee | Complete task, add notes, check tasks                  |
+
+**Initial Assignment:**
+
+- Owner → Boss  
+- Everyone else → Employee  
+
+**Command to promote:**
 ```bash
-/promover @usuario rol
+/promote @user role
+```
 
-## 5️⃣ Comandos del Bot
+## 6️⃣ Database
 
-### 📍 Tareas
-- `/tarea crear` – Crear nueva tarea
-- `/tarea completar` – Completar tarea (solo empleado asignado)
-- `/tarea revisar` – Revisar tarea (solo jefe o manager)
-- `/tarea devolver` – Devolver tarea a estado `cambios`
-- `/tarea info` – Muestra estado, responsables, fecha, historial
-- `/hoy` – Lista tareas activas con vencimiento hoy o atrasadas
+### Table `users`
+| Field       | Type                           |
+|------------|--------------------------------|
+| id         | PK                             |
+| discord_id | string                         |
+| server_id  | string                         |
+| name       | string                         |
+| role       | enum `boss/manager/employee`  |
+| created_at | timestamp                      |
 
-### ⚙️ Configuración
-- `/config google` – Vincula Google Calendar
-- `/config foro` – Define canal de threads
-- `/promover @user rol` – Asigna rol: jefe, manager o empleado
+### Table `tasks`
+| Field           | Type                                      |
+|----------------|------------------------------------------|
+| id              | PK                                       |
+| server_id       | string                                   |
+| title           | string                                   |
+| state           | enum `pending/review/changes/completed` |
+| responsible     | array of discord_id (json)              |
+| due_date        | date                                     |
+| thread_id       | string                                   |
+| google_event_id | string                                   |
+| created_by      | discord_id                               |
+| created_at      | timestamp                                |
+| updated_at      | timestamp                                |
 
----
-
-## 6️⃣ Base de Datos
-
-### Tabla `users`
-| Campo       | Tipo                         |
-|------------|-------------------------------|
-| id         | PK                            |
-| discord_id | string                        |
-| servidor_id| string                        |
-| nombre     | string                        |
-| rol        | enum `jefe/manager/empleado` |
-| creado_en  | timestamp                     |
-
-### Tabla `tasks`
-| Campo           | Tipo                         |
-|----------------|-------------------------------|
-| id              | PK                            |
-| servidor_id     | string                        |
-| titulo          | string                        |
-| estado          | enum `pendiente/revision/cambios/completada` |
-| responsables    | array de discord_id (json)    |
-| fecha_entrega   | date                          |
-| id_thread       | string                        |
-| id_google_event | string                        |
-| created_by      | discord_id                    |
-| created_at      | timestamp                     |
-| updated_at      | timestamp                     |
-
-### Tabla `task_history`
-| Campo          | Tipo                              |
-|---------------|----------------------------------|
-| id             | PK                               |
-| task_id        | FK                               |
-| accion         | enum `creada/entregada/aprobada/devuelta/atrasada/nota` |
-| ejecutada_por  | discord_id                        |
-| fecha          | timestamp                         |
-| descripcion    | string (opcional)                 |
+### Table `task_history`
+| Field         | Type                                                           |
+|---------------|----------------------------------------------------------------|
+| id            | PK                                                             |
+| task_id       | FK                                                             |
+| action        | enum `created/delivered/approved/returned/overdue/note`       |
+| executed_by   | discord_id                                                     |
+| date          | timestamp                                                      |
+| description   | string (optional)                                              |
 
 ---
 
-## 7️⃣ Estructura del Proyecto (Python)
+## 7️⃣ Project Structure (Python)
 
 bot/
-├─ main.py
+├─ baybot.py
+├─ moderation.py
 ├─ config.py
-├─ commands/
-│ ├─ tareas.py
-│ ├─ configuracion.py
-│ ├─ permisos.py
+├─ cogs/
+│ ├─ tasks.py
+│ ├─ configuration.py
+│ ├─ moderation.py
+│ ├─ fun.py
 ├─ services/
 │ ├─ calendar_service.py
 │ ├─ discord_service.py
@@ -169,4 +155,3 @@ bot/
 └─ requirements.txt
 
 ---
-
