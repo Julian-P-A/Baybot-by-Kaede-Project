@@ -133,6 +133,7 @@ From Discord, the bot allows:
 
 ## 7️⃣ Project Structure (Python)
 
+```bash
 bot/
 ├─ baybot.py
 ├─ moderation.py
@@ -153,5 +154,6 @@ bot/
 │ ├─ permissions.py
 │ ├─ logger.py
 └─ requirements.txt
+```
 
 ---
